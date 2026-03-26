@@ -1,28 +1,28 @@
 //STCBLD  JOB (ACCT),'BUILD STCPOC',CLASS=A,MSGCLASS=X,
 //             MSGLEVEL=(1,1),NOTIFY=&SYSUID
-//*====================================================================*
+//*===================================================================*
 //*  STCBLD  - Assemble and Link-Edit STCPOC programs                 *
-//*                                                                    *
-//*  Steps:                                                            *
+//*                                                                   *
+//*  Steps:                                                           *
 //*    ASMSTC  - Assemble STCMAIN.asm   → object in &&STCOBJ          *
-//*    LNKSTC  - Link-edit STCMAIN      → STCPOC.LOADLIB(STCMAIN)    *
+//*    LNKSTC  - Link-edit STCMAIN      → STCPOC.LOADLIB(STCMAIN)     *
 //*    ASMCLNT - Assemble STCCLNT.asm   → object in &&CLNOBJ          *
-//*    LNKCLNT - Link-edit STCCLNT      → STCPOC.LOADLIB(STCCLNT)    *
-//*                                                                    *
-//*  Prerequisites:                                                    *
-//*    STCPOC.SRCLIB  - PDS containing STCMAIN, STCCLNT, STCDSECT    *
-//*    STCPOC.MACLIB  - PDS containing STCDSECT (COPY member)        *
+//*    LNKCLNT - Link-edit STCCLNT      → STCPOC.LOADLIB(STCCLNT)     *
+//*                                                                   *
+//*  Prerequisites:                                                   *
+//*    STCPOC.SRCLIB  - PDS containing STCMAIN, STCCLNT, STCDSECT     *
+//*    STCPOC.MACLIB  - PDS containing STCDSECT (COPY member)         *
 //*    STCPOC.LOADLIB - PDS (load library) - must be pre-allocated    *
 //*    SYS1.AMODGEN   - IBM macro library (CVT, etc.)                 *
-//*    SYS2.MACLIB    - IBM macro library (WTO, GETMAIN, etc.)       *
-//*                                                                    *
-//*  IMPORTANT: STCPOC.LOADLIB must be APF-authorized in PROGxx or   *
-//*  IEAAPFxx BEFORE starting STCPOC.  Both programs use MODESET.    *
-//*====================================================================*
+//*    SYS2.MACLIB    - IBM macro library (WTO, GETMAIN, etc.)        *
+//*                                                                   *
+//*  IMPORTANT: STCPOC.LOADLIB must be APF-authorized in PROGxx or    *
+//*  IEAAPFxx BEFORE starting STCPOC.  Both programs use MODESET.     *
+//*===================================================================*
 //*
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //*  Step 1 - Assemble STCMAIN
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //ASMSTC  EXEC PGM=IFOX00,REGION=512K,
 //             PARM='OBJECT,NODECK,NOLIST,NOXREF'
 //SYSPRINT DD  SYSOUT=*
@@ -39,14 +39,14 @@
 //SYSGO    DD  DSN=&&STCOBJ,UNIT=SYSDA,SPACE=(CYL,(1,1)),
 //             DISP=(NEW,PASS)
 //*
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //*  Step 2 - Link-edit STCMAIN
 //*
 //*  SETCODE AC=1  - Mark the load module APF-authorized.
 //*                  Required for MODESET and CSA GETMAIN/FREEMAIN.
 //*  RENT         - Reentrant (good practice for STC programs)
 //*  REFR         - Refreshable
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //LNKSTC  EXEC PGM=IEWL,REGION=512K,COND=(0,LT,ASMSTC),
 //             PARM='LIST,XREF,LET,RENT,REFR'
 //SYSPRINT DD  SYSOUT=*
@@ -58,9 +58,9 @@
 /*
 //SYSLMOD  DD  DSN=STCPOC.LOADLIB,DISP=SHR     Output load library
 //*
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //*  Step 3 - Assemble STCCLNT
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //ASMCLNT EXEC PGM=IFOX00,REGION=512K,
 //             PARM='OBJECT,NODECK,NOLIST,NOXREF',
 //             COND=(0,LT,LNKSTC)
@@ -75,9 +75,9 @@
 //SYSGO    DD  DSN=&&CLNOBJ,UNIT=SYSDA,SPACE=(CYL,(1,1)),
 //             DISP=(NEW,PASS)
 //*
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //*  Step 4 - Link-edit STCCLNT
-//*--------------------------------------------------------------------*
+//*-------------------------------------------------------------------*
 //LNKCLNT EXEC PGM=IEWL,REGION=512K,COND=(0,LT,ASMCLNT),
 //             PARM='LIST,XREF,LET,RENT,REFR'
 //SYSPRINT DD  SYSOUT=*

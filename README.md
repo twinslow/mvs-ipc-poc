@@ -4,6 +4,13 @@ A proof-of-concept showing how a started task (STC) can accept requests
 from batch jobs in other address spaces, process them, and return responses,
 all through a shared CSA control block.
 
+The original code was written by Claude, but I later switched to using 
+Warp (which us also using claude and more). It was partly an excercise 
+in creating a started task and a job that could communicate with that
+started task -- but also in seeing how the current LLMs could handle
+mainframe MVS related development. That answer to the latter is
+better than I thought. 
+
 ---
 
 ## Files in This Package

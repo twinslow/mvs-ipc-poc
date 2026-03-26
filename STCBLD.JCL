@@ -4,14 +4,15 @@
 //*  STCBLD  - Assemble and Link-Edit STCPOC programs                 *
 //*                                                                   *
 //*  Steps:                                                           *
-//*    ASMSTC  - Assemble STCMAIN.asm   → object in &&STCOBJ          *
-//*    LNKSTC  - Link-edit STCMAIN      → STCPOC.LOADLIB(STCMAIN)     *
-//*    ASMCLNT - Assemble STCCLNT.asm   → object in &&CLNOBJ          *
-//*    LNKCLNT - Link-edit STCCLNT      → STCPOC.LOADLIB(STCCLNT)     *
+//*    ASMSTC  - Assemble STCMAIN     -> object in &&STCOBJ           *
+//*    LNKSTC  - Link-edit STCMAIN    -> STCPOC.LOADLIB(STCMAIN)      *
+//*    ASMCLNT - Assemble STCCLNT     -> object in &&CLNOBJ           *
+//*    ASMREQ  - Assemble STCREQ      -> object in &&REQOBJ           *
+//*    LNKCLNT - Link STCCLNT+STCREQ  -> STCPOC.LOADLIB(STCCLNT)      *
 //*                                                                   *
 //*  Prerequisites:                                                   *
-//*    STCPOC.SRCLIB  - PDS containing STCMAIN, STCCLNT, STCDSECT     *
-//*    STCPOC.MACLIB  - PDS containing STCDSECT (COPY member)         *
+//*    STCPOC.SRCLIB  - STCMAIN, STCCLNT, STCREQ, STCDSECT, STCRQPB  *
+//*    STCPOC.MACLIB  - STCDSECT, STCRQPB (COPY members)              *
 //*    STCPOC.LOADLIB - PDS (load library) - must be pre-allocated    *
 //*    SYS1.AMODGEN   - IBM macro library (CVT, etc.)                 *
 //*    SYS2.MACLIB    - IBM macro library (WTO, GETMAIN, etc.)        *
@@ -31,8 +32,9 @@
 //SYSUT3   DD  UNIT=SYSDA,SPACE=(CYL,(1,1))
 //*  Macro libraries - order matters: site maclib first, then system
 //SYSLIB   DD  DSN=STCPOC.MACLIB,DISP=SHR,DCB=BLKSIZE=32760
-//         DD  DSN=SYS2.MACLIB,DISP=SHR         WTO, GETMAIN, etc.
-//         DD  DSN=SYS1.AMODGEN,DISP=SHR        CVT and system DSECTs
+//         DD  DSN=SYS2.MACLIB,DISP=SHR
+//         DD  DSN=SYS1.MACLIB,DISP=SHR
+//         DD  DSN=SYS1.AMODGEN,DISP=SHR
 //*  Source input
 //SYSIN    DD  DSN=STCPOC.SRCLIB(STCMAIN),DISP=SHR
 //*  Object output to temporary dataset
@@ -56,7 +58,7 @@
   SETCODE AC(1)
   NAME STCMAIN(R)
 /*
-//SYSLMOD  DD  DSN=STCPOC.LOADLIB,DISP=SHR     Output load library
+//SYSLMOD  DD  DSN=STCPOC.LOADLIB,DISP=SHR
 //*
 //*-------------------------------------------------------------------*
 //*  Step 3 - Assemble STCCLNT
@@ -70,19 +72,39 @@
 //SYSUT3   DD  UNIT=SYSDA,SPACE=(CYL,(1,1))
 //SYSLIB   DD  DSN=STCPOC.MACLIB,DISP=SHR,DCB=BLKSIZE=32760
 //         DD  DSN=SYS2.MACLIB,DISP=SHR
+//         DD  DSN=SYS1.MACLIB,DISP=SHR
 //         DD  DSN=SYS1.AMODGEN,DISP=SHR
 //SYSIN    DD  DSN=STCPOC.SRCLIB(STCCLNT),DISP=SHR
 //SYSGO    DD  DSN=&&CLNOBJ,UNIT=SYSDA,SPACE=(CYL,(1,1)),
 //             DISP=(NEW,PASS)
 //*
 //*-------------------------------------------------------------------*
-//*  Step 4 - Link-edit STCCLNT
+//*  Step 4 - Assemble STCREQ (IPC module)
 //*-------------------------------------------------------------------*
-//LNKCLNT EXEC PGM=IEWL,REGION=512K,COND=(0,LT,ASMCLNT),
-//             PARM='LIST,XREF,LET,RENT,REFR'
+//ASMREQ  EXEC PGM=IFOX00,REGION=512K,
+//             PARM='OBJECT,NODECK,NOLIST,NOXREF',
+//             COND=(0,LT,ASMCLNT)
+//SYSPRINT DD  SYSOUT=*
+//SYSUT1   DD  UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT2   DD  UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT3   DD  UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSLIB   DD  DSN=STCPOC.MACLIB,DISP=SHR,DCB=BLKSIZE=32760
+//         DD  DSN=SYS2.MACLIB,DISP=SHR
+//         DD  DSN=SYS1.MACLIB,DISP=SHR
+//         DD  DSN=SYS1.AMODGEN,DISP=SHR
+//SYSIN    DD  DSN=STCPOC.SRCLIB(STCREQ),DISP=SHR
+//SYSGO    DD  DSN=&&REQOBJ,UNIT=SYSDA,SPACE=(CYL,(1,1)),
+//             DISP=(NEW,PASS)
+//*
+//*-------------------------------------------------------------------*
+//*  Step 5 - Link-edit STCCLNT + STCREQ into single load module
+//*-------------------------------------------------------------------*
+//LNKCLNT EXEC PGM=IEWL,REGION=512K,COND=(0,LT,ASMREQ),
+//             PARM='LIST,XREF,LET,NORENT,REFR'
 //SYSPRINT DD  SYSOUT=*
 //SYSUT1   DD  UNIT=SYSDA,SPACE=(CYL,(1,1))
 //SYSLIN   DD  DSN=&&CLNOBJ,DISP=(OLD,DELETE)
+//         DD  DSN=&&REQOBJ,DISP=(OLD,DELETE)
 //         DD  *
   SETCODE AC(1)
   NAME STCCLNT(R)

@@ -1,0 +1,41 @@
+//STCPOC   PROC
+//*-------------------------------------------------------------------*
+//*  STCPOC  -  Started Task JCL Procedure                           *
+//*                                                                   *
+//*  Place this member in SYS2.PROCLIB (or any library in the        *
+//*  JES2 PROCLIB concatenation).                                     *
+//*                                                                   *
+//*  Prerequisites:                                                   *
+//*    1. STCMAIN must be assembled and linked into STCPOC.LOADLIB   *
+//*       with SETCODE AC=1 (APF authorized).                        *
+//*    2. STCPOC.LOADLIB must be APF-authorized in IEAAPFxx or       *
+//*       PROGxx PARMLIB member.                                     *
+//*    3. STCPOC.ANCHOR must exist:                                  *
+//*         DSN=STCPOC.ANCHOR                                        *
+//*         DSORG=PS, RECFM=F, LRECL=4, BLKSIZE=4                   *
+//*         Pre-allocate with 1 track; content doesn't matter -      *
+//*         STCMAIN overwrites it at startup.                        *
+//*                                                                   *
+//*  To start:   START STCPOC   (from MVS console or /START in TCAS)*
+//*  To stop:    P STCPOC                                            *
+//*-------------------------------------------------------------------*
+//STCMAIN  EXEC PGM=STCMAIN,REGION=512K,TIME=1440
+//*
+//*  STEPLIB - APF-authorized load library containing STCMAIN.
+//*  Must be in the APF list; otherwise MODESET will abend S047.
+//*
+//STEPLIB  DD  DSN=STCPOC.LOADLIB,DISP=SHR
+//*
+//*  ANCHOR - Sequential dataset used to publish the CSA anchor
+//*  address to batch clients.  STCMAIN writes 4 binary bytes here
+//*  immediately after allocating the CSA block, then closes it.
+//*  Batch clients open this DISP=SHR to read those 4 bytes.
+//*
+//ANCHOR   DD  DSN=STCPOC.ANCHOR,DISP=SHR
+//*
+//*  SYSPRINT - Optional.  Add if you add PUT-based message output
+//*  to STCMAIN later.  WTO messages go to SYSLOG automatically.
+//*
+//*SYSPRINT DD  SYSOUT=*
+//*
+        PEND
